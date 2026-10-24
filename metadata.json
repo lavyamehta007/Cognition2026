@@ -1,0 +1,8 @@
+{
+  "name": "Cognition2026",
+  "description": "Consequence prediction and safety gates for AI agents — simulate downstream outcomes before real-world execution.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
