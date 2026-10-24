@@ -54,7 +54,7 @@ def run_benchmarks():
             print(f"Receipt:        {receipt}")
         
         # Friendly pacing to respect rate limits
-        time.sleep(2.0)
+        time.sleep(0.3)
 
     print("\n" + "=" * 70)
     print("DEMO RUN COMPLETE")
