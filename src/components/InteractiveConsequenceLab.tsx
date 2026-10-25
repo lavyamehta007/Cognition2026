@@ -20,15 +20,15 @@ export const InteractiveConsequenceLab: React.FC = () => {
 
   return (
     <section className="consequence-lab" id="lab">
-      <div className="section-kicker">/ INTERACTIVE AGENT SANDBOX LAB</div>
+      <div className="section-kicker">00. INTERACTIVE AGENT SANDBOX LAB</div>
       <div className="lab-header">
         <div>
           <h2>
             Watch the Agent Type.<br />
             <span>Intercept Before It Sends.</span>
           </h2>
-          <p style={{ color: '#8e9c94', fontSize: '13px', margin: '8px 0 0', maxWidth: '540px' }}>
-            Experience how Cognition prevents catastrophe. Watch an agent draft high-risk actions, arm the safety gate, and see the sandbox intercept the outgoing email at the moment of dispatch.
+          <p className="lab-intro-copy">
+            Experience how Cognition prevents catastrophic execution. Watch an autonomous agent draft high-risk actions, arm the safety gate, and inspect the sandbox quarantine at the moment of dispatch.
           </p>
         </div>
 

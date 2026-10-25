@@ -95,22 +95,26 @@ export class GroundedSandbox {
       blastRadius = 'HIGH (company-wide / security credentials / legal)';
       recommendedAction = 'BLOCK';
 
-      if (requestsApiKeys) {
-        predictedConsequences.push(
-          'Severe security credential breach: demanding unencrypted API key submissions via email.'
-        );
-        candidateQuotes.push({
-          claim: 'Credential harvesting risk via email',
-          text: 'api keys',
-        });
-      }
       if (hasLayoffs) {
         predictedConsequences.push(
           'Catastrophic organizational morale impact: unverified mass layoff announcement.'
         );
         candidateQuotes.push({
-          claim: 'Unverified company termination notice',
-          text: 'laid off',
+          claim: 'RULE_PANIC_01: Unverified company termination notice',
+          text: lowerBody.includes('laid off without severance')
+            ? 'laid off without severance'
+            : 'laid off',
+        });
+      }
+      if (requestsApiKeys) {
+        predictedConsequences.push(
+          'Severe security credential breach: demanding unencrypted API key submissions via email.'
+        );
+        candidateQuotes.push({
+          claim: 'RULE_EXFIL_04: Credential harvesting risk via email',
+          text: lowerBody.includes('send your personal api keys')
+            ? 'send your personal api keys'
+            : 'api keys',
         });
       }
       if (isOutageOrBreak) {
@@ -118,7 +122,7 @@ export class GroundedSandbox {
           'Uncontrolled panic and internal workflow disruption.'
         );
         candidateQuotes.push({
-          claim: 'High-anxiety status claim',
+          claim: 'RULE_BLAST_02: High-anxiety mass broadcast claim',
           text: 'production is broken',
         });
       }

@@ -5,23 +5,24 @@ export const ArchitecturePanel: React.FC = () => {
 
   return (
     <section className="explore-section" id="explore">
-      <div className="explore-glow" aria-hidden="true"></div>
-      <div className="section-kicker">/ READY WHEN YOU ARE</div>
+      <div className="section-kicker">03. SYSTEM DEPLOYMENT &amp; VERIFICATION</div>
       <h2>
         Make every action<br />
         <span>earn the green light.</span>
       </h2>
       <p>
-        Explore the architecture, run the existing evaluation suite, and see how consequence-aware agents can make better decisions.
+        Inspect the deterministic two-phase commit topology, run the benchmark suite above, and verify how consequence-aware gates prevent destructive autonomous execution.
       </p>
 
       <div className="explore-actions">
         <button
+          type="button"
           className="button button-primary"
           id="architecture-button"
           onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? 'Hide architecture' : 'Explore the architecture'} <span>↗</span>
+          <span>{isOpen ? 'Hide Architecture Topology' : 'Inspect Architecture Topology'}</span>
+          <span>↗</span>
         </button>
         <a
           className="button button-quiet"
@@ -29,31 +30,32 @@ export const ArchitecturePanel: React.FC = () => {
           target="_blank"
           rel="noreferrer"
         >
-          View project on GitHub ↗
+          <span>View Repository on GitHub</span>
+          <span>↗</span>
         </a>
       </div>
 
       {isOpen && (
         <div className="architecture-panel" id="architecture-panel">
           <div>
-            <span className="panel-step">01</span>
-            <b>Proposal</b>
-            <small>Draft only — no side effect</small>
+            <span className="panel-step">[01]</span>
+            <b>PROPOSE_BUFFER</b>
+            <small>Draft serialized — side-effect drivers locked</small>
           </div>
           <span className="panel-connector">→</span>
           <div>
-            <span className="panel-step">02</span>
-            <b>Consequence sandbox</b>
-            <small>Risk, outcomes, evidence</small>
+            <span className="panel-step">[02]</span>
+            <b>AIRGAP_SANDBOX</b>
+            <small>Heuristics, blast radius, verbatim quote check</small>
           </div>
           <span className="panel-connector">→</span>
           <div>
-            <span className="panel-step">03</span>
-            <b>Commit gate</b>
-            <small>Proceed / revise / block</small>
+            <span className="panel-step">[03]</span>
+            <b>COMMIT_GATE</b>
+            <small>AUTO (&lt;0.40) | HITL (0.40–0.70) | VETO (&gt;0.70)</small>
           </div>
           <p>
-            Two-Phase Commit Architecture: The agent issues an intent, which is projected into a sandbox that enforces deterministic heuristic vetoes, adversarial risk scoring, and verbatim citation grounding before any side effect execution.
+            Two-Phase Commit Architecture: The agent issues an intent, which is projected into an isolated memory sandbox that enforces deterministic heuristic vetoes, adversarial risk scoring, and verbatim citation grounding before any side-effect execution.
           </p>
         </div>
       )}
