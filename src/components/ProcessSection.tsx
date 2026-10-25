@@ -146,7 +146,10 @@ export const ProcessSection: React.FC = () => {
     <section className="process-section" id="process" ref={sectionRef}>
       {/* Left-Hand Inspection Viewport: Dynamic JSON Schema & Stage Telemetry */}
       <div className="process-visual">
-        <div className="schema-viewport-window">
+        <div
+          className="schema-viewport-window scroll-reveal"
+          style={{ '--stagger-idx': 0 } as React.CSSProperties}
+        >
           <div className="schema-viewport-header">
             <div className="schema-header-left">
               <span className="schema-stage-indicator">[{currentSpec.count}]</span>
@@ -230,18 +233,33 @@ export const ProcessSection: React.FC = () => {
 
       {/* Right-Hand Scroll-Scrubbed Pipeline Trace */}
       <div className="process-copy">
-        <div className="section-kicker">02. THE TWO-PHASE COMMIT PIPELINE</div>
-        <h2>
+        <div
+          className="section-kicker scroll-reveal"
+          style={{ '--stagger-idx': 0 } as React.CSSProperties}
+        >
+          02. THE TWO-PHASE COMMIT PIPELINE
+        </div>
+        <h2
+          className="scroll-reveal"
+          style={{ '--stagger-idx': 1 } as React.CSSProperties}
+        >
           From intention<br />
           to <span>verified execution.</span>
         </h2>
-        <p className="process-intro">
+        <p
+          className="process-intro scroll-reveal"
+          style={{ '--stagger-idx': 2 } as React.CSSProperties}
+        >
           Autonomous agents never jump directly from prompt generation to external side effects. Scroll or select each pipeline node to inspect the live state transition schema.
         </p>
 
         <div className="pipeline-trace-layout">
           {/* Vertical SVG Spine with Scrubbed Data Packet */}
-          <div className="trace-spine-col" aria-hidden="true">
+          <div
+            className="trace-spine-col scroll-reveal"
+            style={{ '--stagger-idx': 1 } as React.CSSProperties}
+            aria-hidden="true"
+          >
             <svg viewBox="0 0 36 320" className="trace-spine-svg">
               {/* Background Track */}
               <line x1="18" y1="12" x2="18" y2="308" stroke="#22262C" strokeWidth="1.5" />
@@ -292,7 +310,8 @@ export const ProcessSection: React.FC = () => {
                   ref={(el) => {
                     stepRefs.current[idx] = el;
                   }}
-                  className={`step-trace-card ${isActive ? 'active' : ''}`}
+                  className={`step-trace-card scroll-reveal ${isActive ? 'active' : ''}`}
+                  style={{ '--stagger-idx': idx } as React.CSSProperties}
                   onClick={() => setActiveStage(idx)}
                   role="button"
                   tabIndex={0}

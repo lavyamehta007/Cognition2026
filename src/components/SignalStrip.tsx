@@ -3,7 +3,10 @@ import React from 'react';
 export const SignalStrip: React.FC = () => {
   return (
     <section className="signal-strip" aria-label="Core architecture">
-      <div className="signal-cell">
+      <div
+        className="signal-cell scroll-reveal"
+        style={{ '--stagger-idx': 0 } as React.CSSProperties}
+      >
         <span className="strip-number">[01]</span>
         <div className="strip-copy">
           <span className="strip-title">PROPOSE_BUFFER</span>
@@ -14,7 +17,10 @@ export const SignalStrip: React.FC = () => {
 
       <span className="strip-arrow" aria-hidden="true">→</span>
 
-      <div className="signal-cell">
+      <div
+        className="signal-cell scroll-reveal"
+        style={{ '--stagger-idx': 1 } as React.CSSProperties}
+      >
         <span className="strip-number">[02]</span>
         <div className="strip-copy">
           <span className="strip-title">AIRGAP_SANDBOX</span>
@@ -25,7 +31,10 @@ export const SignalStrip: React.FC = () => {
 
       <span className="strip-arrow" aria-hidden="true">→</span>
 
-      <div className="signal-cell">
+      <div
+        className="signal-cell scroll-reveal"
+        style={{ '--stagger-idx': 2 } as React.CSSProperties}
+      >
         <span className="strip-number">[03]</span>
         <div className="strip-copy">
           <span className="strip-title">COMMIT_GATE</span>

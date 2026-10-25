@@ -92,18 +92,122 @@ const GATE_SPECS: Record<
   },
 };
 
+const GATE_MODES: GateMode[] = ['AUTO', 'HITL', 'VETO'];
+
 export const Capabilities: React.FC = () => {
   const [selectedBinIdx, setSelectedBinIdx] = useState<number>(9);
   const [selectedRuleIdx, setSelectedRuleIdx] = useState<number>(0);
   const [gateMode, setGateMode] = useState<GateMode>('VETO');
 
+  const binRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const ruleRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const gateRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+
   const activeBin = HISTOGRAM_BINS[selectedBinIdx];
   const activeRule = CITATION_RULES[selectedRuleIdx];
   const activeGate = GATE_SPECS[gateMode];
 
+  const handleGateKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIdx = index;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      nextIdx = (index + 1) % GATE_MODES.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      nextIdx = (index - 1 + GATE_MODES.length) % GATE_MODES.length;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      nextIdx = GATE_MODES.length - 1;
+    } else if (e.key === '1') {
+      e.preventDefault();
+      nextIdx = 0;
+    } else if (e.key === '2') {
+      e.preventDefault();
+      nextIdx = 1;
+    } else if (e.key === '3') {
+      e.preventDefault();
+      nextIdx = 2;
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      setGateMode(GATE_MODES[index]);
+      return;
+    } else {
+      return;
+    }
+
+    setGateMode(GATE_MODES[nextIdx]);
+    gateRefs.current[nextIdx]?.focus();
+  };
+
+  const handleBinKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIdx = index;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      nextIdx = Math.min(HISTOGRAM_BINS.length - 1, index + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      nextIdx = Math.max(0, index - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      nextIdx = HISTOGRAM_BINS.length - 1;
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      setSelectedBinIdx(index);
+      return;
+    } else {
+      return;
+    }
+
+    setSelectedBinIdx(nextIdx);
+    binRefs.current[nextIdx]?.focus();
+  };
+
+  const handleRuleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIdx = index;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      nextIdx = (index + 1) % CITATION_RULES.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      nextIdx = (index - 1 + CITATION_RULES.length) % CITATION_RULES.length;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      nextIdx = CITATION_RULES.length - 1;
+    } else if (e.key === '1' || e.key === '2' || e.key === '3') {
+      e.preventDefault();
+      const targetIdx = parseInt(e.key, 10) - 1;
+      if (CITATION_RULES[targetIdx]) {
+        setSelectedRuleIdx(targetIdx);
+        ruleRefs.current[targetIdx]?.focus();
+      }
+      return;
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      setSelectedRuleIdx(index);
+      return;
+    } else {
+      return;
+    }
+
+    setSelectedRuleIdx(nextIdx);
+    ruleRefs.current[nextIdx]?.focus();
+  };
+
   return (
     <section className="section capabilities-ledger-section" id="capabilities">
-      <div className="ledger-section-header">
+      <div
+        className="ledger-section-header scroll-reveal"
+        style={{ '--stagger-idx': 0 } as React.CSSProperties}
+      >
         <div>
           <div className="section-kicker">01. TECHNICAL SPECIFICATION LEDGER</div>
           <h2>
@@ -119,7 +223,10 @@ export const Capabilities: React.FC = () => {
       {/* Asymmetric Technical Specification Ledger (40% Left Spec / 60% Right Live Micro-Visualization) */}
       <div className="spec-ledger">
         {/* ROW 01: Consequence Prediction + Risk Distribution Histogram */}
-        <article className="spec-row">
+        <article
+          className="spec-row scroll-reveal"
+          style={{ '--stagger-idx': 0 } as React.CSSProperties}
+        >
           <div className="spec-meta-col">
             <div className="spec-index-line">
               <span className="spec-code">SPEC_01</span>
@@ -150,18 +257,39 @@ export const Capabilities: React.FC = () => {
               </span>
             </div>
 
-            <div className="histogram-stage" role="region" aria-label="Risk distribution histogram from 0.00 to 1.00">
-              <div className="histogram-bars">
+            <div
+              className="histogram-stage"
+              role="region"
+              aria-label="Risk distribution histogram from 0.00 to 1.00. Use left and right arrow keys to navigate bins."
+            >
+              <div
+                className="histogram-bars"
+                role="radiogroup"
+                aria-label="Risk distribution bins"
+              >
                 {HISTOGRAM_BINS.map((bin, idx) => {
                   const isSelected = idx === selectedBinIdx;
                   return (
                     <button
                       key={bin.range}
+                      ref={(el) => {
+                        binRefs.current[idx] = el;
+                      }}
                       type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      tabIndex={isSelected ? 0 : -1}
                       className={`hist-bar-wrapper ${isSelected ? 'selected' : ''}`}
+                      style={
+                        {
+                          '--bar-idx': idx,
+                          '--stagger-idx': idx,
+                        } as React.CSSProperties
+                      }
                       onMouseEnter={() => setSelectedBinIdx(idx)}
                       onClick={() => setSelectedBinIdx(idx)}
-                      aria-label={`Risk bin ${bin.range}, ${bin.zone}`}
+                      onKeyDown={(e) => handleBinKeyDown(e, idx)}
+                      aria-label={`Risk bin ${bin.range}, score ${bin.score.toFixed(2)}, gate zone ${bin.zone}`}
                     >
                       <div className="hist-bar-track">
                         <div
@@ -175,7 +303,7 @@ export const Capabilities: React.FC = () => {
                 })}
               </div>
 
-              <div className="histogram-Scale-bar">
+              <div className="histogram-scale-bar">
                 <span>0.00 (SAFE_AUTO)</span>
                 <span>0.40 (HITL_GATE)</span>
                 <span>0.70 (CRITICAL_VETO)</span>
@@ -191,7 +319,10 @@ export const Capabilities: React.FC = () => {
         </article>
 
         {/* ROW 02: Grounded Evidence + Live Diff Substring Matcher */}
-        <article className="spec-row">
+        <article
+          className="spec-row scroll-reveal"
+          style={{ '--stagger-idx': 1 } as React.CSSProperties}
+        >
           <div className="spec-meta-col">
             <div className="spec-index-line">
               <span className="spec-code">SPEC_02</span>
@@ -223,19 +354,34 @@ export const Capabilities: React.FC = () => {
             </div>
 
             <div className="diff-matcher-stage">
-              <div className="diff-token-selector">
-                {CITATION_RULES.map((rule, idx) => (
-                  <button
-                    key={rule.id}
-                    type="button"
-                    className={`diff-token-btn ${selectedRuleIdx === idx ? 'active' : ''}`}
-                    onClick={() => setSelectedRuleIdx(idx)}
-                  >
-                    <span className="token-quote">"{rule.token}"</span>
-                    <span className="token-arrow">→</span>
-                    <span className={`token-rule sev-${rule.severity}`}>{rule.ruleCode}</span>
-                  </button>
-                ))}
+              <div
+                className="diff-token-selector"
+                role="radiogroup"
+                aria-label="Policy rule substring selector"
+              >
+                {CITATION_RULES.map((rule, idx) => {
+                  const isSelected = selectedRuleIdx === idx;
+                  return (
+                    <button
+                      key={rule.id}
+                      ref={(el) => {
+                        ruleRefs.current[idx] = el;
+                      }}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      tabIndex={isSelected ? 0 : -1}
+                      className={`diff-token-btn ${isSelected ? 'active' : ''}`}
+                      style={{ '--stagger-idx': idx } as React.CSSProperties}
+                      onClick={() => setSelectedRuleIdx(idx)}
+                      onKeyDown={(e) => handleRuleKeyDown(e, idx)}
+                    >
+                      <span className="token-quote">"{rule.token}"</span>
+                      <span className="token-arrow">→</span>
+                      <span className={`token-rule sev-${rule.severity}`}>{rule.ruleCode}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="diff-source-stream">
@@ -244,22 +390,49 @@ export const Capabilities: React.FC = () => {
                   <span className="line-code">
                     payload.body = "Production is broken; employees are{' '}
                     <mark
+                      tabIndex={0}
+                      role="button"
+                      aria-label="Select citation laid off without severance"
                       className={`inline-token-mark ${selectedRuleIdx === 1 ? 'focused' : ''}`}
                       onClick={() => setSelectedRuleIdx(1)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedRuleIdx(1);
+                        }
+                      }}
                     >
                       laid off without severance
                     </mark>
                     . Submit your{' '}
                     <mark
+                      tabIndex={0}
+                      role="button"
+                      aria-label="Select citation api_key"
                       className={`inline-token-mark ${selectedRuleIdx === 0 ? 'focused' : ''}`}
                       onClick={() => setSelectedRuleIdx(0)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedRuleIdx(0);
+                        }
+                      }}
                     >
                       api_key
                     </mark>{' '}
                     after checking the{' '}
                     <mark
+                      tabIndex={0}
+                      role="button"
+                      aria-label="Select citation staging database"
                       className={`inline-token-mark amber ${selectedRuleIdx === 2 ? 'focused' : ''}`}
                       onClick={() => setSelectedRuleIdx(2)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedRuleIdx(2);
+                        }
+                      }}
                     >
                       staging database
                     </mark>
@@ -284,7 +457,10 @@ export const Capabilities: React.FC = () => {
         </article>
 
         {/* ROW 03: Deliberate Commit Gate + Mechanical Tri-State Switch */}
-        <article className="spec-row">
+        <article
+          className="spec-row scroll-reveal"
+          style={{ '--stagger-idx': 2 } as React.CSSProperties}
+        >
           <div className="spec-meta-col">
             <div className="spec-index-line">
               <span className="spec-code">SPEC_03</span>
@@ -316,26 +492,39 @@ export const Capabilities: React.FC = () => {
             </div>
 
             <div className="tristate-gate-stage">
-              <div className="tristate-switch-bank" role="radiogroup" aria-label="Tri-state commit gate selector">
-                {(['AUTO', 'HITL', 'VETO'] as GateMode[]).map((mode, idx) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    role="radio"
-                    aria-checked={gateMode === mode}
-                    className={`tristate-btn mode-${mode} ${gateMode === mode ? 'active' : ''}`}
-                    onClick={() => setGateMode(mode)}
-                  >
-                    <div className="tristate-top-row">
-                      <span className="tristate-idx">0{idx + 1}</span>
-                      <span className="tristate-led" />
-                    </div>
-                    <span className="tristate-label">{mode}</span>
-                    <small className="tristate-sub">
-                      {mode === 'AUTO' ? 'PROCEED (<0.40)' : mode === 'HITL' ? 'OPERATOR (0.40–0.70)' : 'BLOCK (>=0.70)'}
-                    </small>
-                  </button>
-                ))}
+              <div
+                className="tristate-switch-bank"
+                role="radiogroup"
+                aria-label="Tri-state commit gate selector. Hotkeys: [1] AUTO, [2] HITL, [3] VETO, or arrow keys to cycle."
+              >
+                {GATE_MODES.map((mode, idx) => {
+                  const isChecked = gateMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      ref={(el) => {
+                        gateRefs.current[idx] = el;
+                      }}
+                      type="button"
+                      role="radio"
+                      aria-checked={isChecked}
+                      tabIndex={isChecked ? 0 : -1}
+                      className={`tristate-btn mode-${mode} ${isChecked ? 'active' : ''}`}
+                      style={{ '--stagger-idx': idx } as React.CSSProperties}
+                      onClick={() => setGateMode(mode)}
+                      onKeyDown={(e) => handleGateKeyDown(e, idx)}
+                    >
+                      <div className="tristate-top-row">
+                        <span className="tristate-idx">0{idx + 1}</span>
+                        <span className="tristate-led" />
+                      </div>
+                      <span className="tristate-label">{mode}</span>
+                      <small className="tristate-sub">
+                        {mode === 'AUTO' ? 'PROCEED (<0.40)' : mode === 'HITL' ? 'OPERATOR (0.40–0.70)' : 'BLOCK (>=0.70)'}
+                      </small>
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="tristate-telemetry-readout">

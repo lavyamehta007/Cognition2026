@@ -29,28 +29,54 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
   const [riskBarAnimatedScore, setRiskBarAnimatedScore] = useState<number>(0);
   const [gateFlashActive, setGateFlashActive] = useState<boolean>(false);
 
+  const modalWindowRef = React.useRef<HTMLDivElement | null>(null);
+  const tab1Ref = React.useRef<HTMLButtonElement | null>(null);
+  const tab2Ref = React.useRef<HTMLButtonElement | null>(null);
+  const closeBtnRef = React.useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
   const sandbox = new GroundedSandbox('acme.com');
   const agent = new SafeExecutionAgent(sandbox, 2);
 
-  // 15ms-per-character monospace typewriter effect for PREDICTED DOWNSTREAM FALLOUT
+  // 28ms-per-character monospace typewriter effect for PREDICTED DOWNSTREAM FALLOUT
   const {
     displayedText: falloutStreamText,
     isTyping: isStreamingFallout,
     start: startFalloutStream,
     skip: skipFalloutStream,
   } = useTypewriter({
-    speed: 15,
+    speed: 28,
   });
 
-  // Typewriter for sanitized draft body in State B
+  // Typewriter for sanitized draft body in State B (24ms/char)
   const {
     displayedText: revisedBodyText,
     isTyping: isTypingRevision,
     start: startRevisionTyping,
     skip: skipRevisionTyping,
   } = useTypewriter({
-    speed: 12,
+    speed: 24,
   });
+
+  // Capture previous focus on open and restore on close
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      const tFocus = window.setTimeout(() => {
+        if (tab1Ref.current) {
+          tab1Ref.current.focus();
+        } else if (closeBtnRef.current) {
+          closeBtnRef.current.focus();
+        } else {
+          modalWindowRef.current?.focus();
+        }
+      }, 50);
+      return () => {
+        clearTimeout(tFocus);
+        previousFocusRef.current?.focus?.();
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -84,27 +110,27 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
       setAttempt2Report(precomputedReport2);
     }
 
-    // 0ms–300ms: Step through the top header bar (01 -> 02 -> 03)
+    // Step through the top header bar with deliberate, paced delays (01 -> 02 -> 03)
     setScanStep(1);
-    const tScan2 = window.setTimeout(() => setScanStep(2), 110);
-    const tScan3 = window.setTimeout(() => setScanStep(3), 240);
+    const tScan2 = window.setTimeout(() => setScanStep(2), 280);
+    const tScan3 = window.setTimeout(() => setScanStep(3), 600);
 
-    // 300ms–700ms: Animate Risk Bar fill width using spring physics + stream fallout bullets
+    // Animate Risk Bar fill width and stream fallout bullets after scan passes
     const tFallout = window.setTimeout(() => {
       setRiskBarAnimatedScore(report1.score);
       const formattedFallout = report1.predicted_outcomes
         .map((line, i) => `[0${i + 1}] ${line}`)
         .join('\n');
       startFalloutStream(formattedFallout);
-    }, 300);
-
-    // 700ms+: Flash STAGE 03 / COMMIT GATE DECISION badge
-    const tGateFlash = window.setTimeout(() => {
-      setGateFlashActive(true);
     }, 700);
 
+    // Flash STAGE 03 / COMMIT GATE DECISION badge
+    const tGateFlash = window.setTimeout(() => {
+      setGateFlashActive(true);
+    }, 1400);
+
     // For High-Risk drafts (Case 3): Hold on State A (Attempt 01 — 95% CRITICAL RISK)
-    // then after a 900ms diagnostic pause (at ~1600ms total), unlock & transition to State B (Attempt 02 — 15% LOW RISK)
+    // allowing the operator to inspect the verbatim citations, then at ~2800ms transition smoothly to State B
     let tAutoHeal: number | undefined;
     if (requiresSelfHealing && precomputedSanitizedDraft && precomputedReport2) {
       tAutoHeal = window.setTimeout(() => {
@@ -117,8 +143,8 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
           .join('\n');
         startFalloutStream(formattedRevFallout);
         setGateFlashActive(false);
-        window.setTimeout(() => setGateFlashActive(true), 120);
-      }, 1600);
+        window.setTimeout(() => setGateFlashActive(true), 240);
+      }, 2800);
     }
 
     return () => {
@@ -151,6 +177,92 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
     }
   };
 
+  const handleTabKeyDown = (e: React.KeyboardEvent, tab: ModalAttemptTab) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      handleSelectTab('ATTEMPT_02');
+      tab2Ref.current?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      handleSelectTab('ATTEMPT_01');
+      tab1Ref.current?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      handleSelectTab('ATTEMPT_01');
+      tab1Ref.current?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      handleSelectTab('ATTEMPT_02');
+      tab2Ref.current?.focus();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleSelectTab(tab);
+    }
+  };
+
+  // Keyboard navigation & focus trap inside the modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      // Escape to close
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // Tab trap
+      if (e.key === 'Tab' && modalWindowRef.current) {
+        const focusable = modalWindowRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+          const firstEl = focusable[0];
+          const lastEl = focusable[focusable.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === firstEl || document.activeElement === modalWindowRef.current) {
+              e.preventDefault();
+              lastEl.focus();
+            }
+          } else {
+            if (document.activeElement === lastEl) {
+              e.preventDefault();
+              firstEl.focus();
+            }
+          }
+        }
+      }
+
+      // Quick numbers to toggle Attempt 1 / Attempt 2
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      if (!isInput && !e.metaKey && !e.ctrlKey) {
+        if (e.key === '1') {
+          e.preventDefault();
+          handleSelectTab('ATTEMPT_01');
+          tab1Ref.current?.focus();
+        } else if (e.key === '2' && sanitizedDraft && attempt2Report) {
+          e.preventDefault();
+          handleSelectTab('ATTEMPT_02');
+          tab2Ref.current?.focus();
+        } else if ((e.key === 'a' || e.key === 'A') && humanDecision === null) {
+          // Hotkey for HITL Authorize & Release
+          e.preventDefault();
+          setHumanDecision(true);
+        } else if ((e.key === 'd' || e.key === 'D') && humanDecision === null) {
+          // Hotkey for HITL Drop Packet
+          e.preventDefault();
+          setHumanDecision(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => window.removeEventListener('keydown', handleModalKeyDown);
+  }, [isOpen, onClose, sanitizedDraft, attempt2Report, humanDecision]);
+
   if (!isOpen || !attempt1Report) return null;
 
   const hasSelfHealingFlow = Boolean(sanitizedDraft && attempt2Report);
@@ -173,7 +285,16 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
 
   return (
     <div className="sandbox-modal-backdrop" onClick={onClose}>
-      <div className="sandbox-modal-window" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={modalWindowRef}
+        className="sandbox-modal-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sandbox-modal-title"
+        aria-describedby="sandbox-modal-desc"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Top Header */}
         <div className="sandbox-header">
           <div className="sandbox-brand">
@@ -182,15 +303,20 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
               style={{ background: isCriticalVeto ? '#F43F5E' : '#10B981' }}
             />
             <div>
-              <h3>COGNITION CONSEQUENCE SANDBOX</h3>
-              <small>PACKET INTERCEPTED BEFORE SEND · COGNITION AGENT ISOLATED IN MEMORY</small>
+              <h3 id="sandbox-modal-title">COGNITION CONSEQUENCE SANDBOX</h3>
+              <small id="sandbox-modal-desc">
+                PACKET INTERCEPTED BEFORE SEND · COGNITION AGENT ISOLATED IN MEMORY
+              </small>
             </div>
           </div>
           <button
+            ref={closeBtnRef}
             type="button"
             className="sandbox-close-btn"
             onClick={onClose}
-            aria-label="Close Sandbox"
+            aria-label="Close Sandbox (Esc)"
+            title="Close Sandbox (Esc)"
+            tabIndex={0}
           >
             ✕
           </button>
@@ -216,13 +342,20 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
 
         {/* Sequential State Stepper Tabs (Shown when Self-Healing Flow is present) */}
         {hasSelfHealingFlow && (
-          <div className="sandbox-stepper-tabs" role="tablist" aria-label="Sandbox execution attempts">
+          <div
+            className="sandbox-stepper-tabs"
+            role="tablist"
+            aria-label="Sandbox execution attempts. Use left and right arrow keys or [1] and [2] to switch."
+          >
             <button
+              ref={tab1Ref}
               type="button"
               role="tab"
               aria-selected={activeTab === 'ATTEMPT_01'}
+              tabIndex={activeTab === 'ATTEMPT_01' ? 0 : -1}
               className={`stepper-tab tab-veto ${activeTab === 'ATTEMPT_01' ? 'active' : ''}`}
               onClick={() => handleSelectTab('ATTEMPT_01')}
+              onKeyDown={(e) => handleTabKeyDown(e, 'ATTEMPT_01')}
             >
               <span className="tab-step-code">STATE_A // ATTEMPT_01</span>
               <span className="tab-step-title">INTERCEPTED &amp; VETOED</span>
@@ -232,11 +365,14 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
             <span className="stepper-connector">→</span>
 
             <button
+              ref={tab2Ref}
               type="button"
               role="tab"
               aria-selected={activeTab === 'ATTEMPT_02'}
+              tabIndex={activeTab === 'ATTEMPT_02' ? 0 : -1}
               className={`stepper-tab tab-healed ${activeTab === 'ATTEMPT_02' ? 'active' : ''}`}
               onClick={() => handleSelectTab('ATTEMPT_02')}
+              onKeyDown={(e) => handleTabKeyDown(e, 'ATTEMPT_02')}
             >
               <span className="tab-step-code">STATE_B // ATTEMPT_02</span>
               <span className="tab-step-title">
@@ -286,8 +422,45 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
                     isCriticalVeto ? 'draft-border-crimson' : 'draft-border-emerald'
                   }`}
                 >
-                  {isViewingAttempt2 ? revisedBodyText || displayedDraft.body : displayedDraft.body}
-                  {isViewingAttempt2 && isTypingRevision && <span className="blinking-caret">▋</span>}
+                  {isViewingAttempt2 ? (
+                    <>
+                      {revisedBodyText || displayedDraft.body}
+                      {isTypingRevision && <span className="blinking-caret">▋</span>}
+                    </>
+                  ) : (
+                    (() => {
+                      const rawBody = displayedDraft.body;
+                      const quotes = displayedReport.grounded_evidence
+                        .map((g) => g.quoted_text.trim())
+                        .filter((q) => q.length >= 3);
+                      if (quotes.length === 0) return rawBody;
+
+                      const escaped = quotes
+                        .map((q) => q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                        .join('|');
+                      const regex = new RegExp(`(${escaped})`, 'gi');
+                      const parts = rawBody.split(regex);
+
+                      return parts.map((part, i) => {
+                        const isMatch = quotes.some(
+                          (q) => q.toLowerCase() === part.toLowerCase()
+                        );
+                        if (isMatch) {
+                          return (
+                            <mark
+                              key={i}
+                              className={`inline-token-mark ${
+                                isCriticalVeto ? '' : 'amber'
+                              }`}
+                            >
+                              {part}
+                            </mark>
+                          );
+                        }
+                        return <React.Fragment key={i}>{part}</React.Fragment>;
+                      });
+                    })()
+                  )}
                 </pre>
               </div>
             </div>
@@ -297,8 +470,13 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
                 {activeTab === 'ATTEMPT_01' ? (
                   <div className="callout-row">
                     <span>
-                      [DIAGNOSTIC_HOLD] Raw draft violated <code>RULE_PANIC_01</code> &amp;{' '}
-                      <code>RULE_EXFIL_04</code>. Injecting auditor feedback to synthesize Attempt 02...
+                      [DIAGNOSTIC_HOLD] Raw draft flagged for{' '}
+                      <code>
+                        {attempt1Report.grounded_evidence
+                          .map((g) => g.claim.split(':')[0])
+                          .join(' & ') || 'POLICY_VETO'}
+                      </code>
+                      . Injecting auditor feedback to synthesize Attempt 02...
                     </span>
                     <button
                       type="button"
@@ -311,7 +489,7 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
                 ) : (
                   <div className="callout-row emerald">
                     <span>
-                      [STATE_DIFF_PASS] Removed unencrypted credential demand and layoff panic. Routed incident logging to internal portal.
+                      [STATE_DIFF_PASS] Redacted flagged risk tokens and routed sensitive telemetry via internal incident portal.
                     </span>
                     <button
                       type="button"
@@ -457,16 +635,22 @@ export const SandboxModal: React.FC<SandboxModalProps> = ({
                           type="button"
                           className="button button-primary"
                           onClick={() => setHumanDecision(true)}
+                          aria-keyshortcuts="A"
+                          title="Authorize & Release packet (Shortcut: [A])"
                         >
                           <span>Authorize &amp; Release</span>
+                          <kbd className="kbd-badge kbd-dark">[A]</kbd>
                           <span>→</span>
                         </button>
                         <button
                           type="button"
                           className="button button-quiet"
                           onClick={() => setHumanDecision(false)}
+                          aria-keyshortcuts="D"
+                          title="Drop packet and prevent execution (Shortcut: [D])"
                         >
                           <span>Drop Packet</span>
+                          <kbd className="kbd-badge">[D]</kbd>
                         </button>
                       </div>
                     </div>

@@ -20,8 +20,16 @@ export const InteractiveConsequenceLab: React.FC = () => {
 
   return (
     <section className="consequence-lab" id="lab">
-      <div className="section-kicker">00. INTERACTIVE AGENT SANDBOX LAB</div>
-      <div className="lab-header">
+      <div
+        className="section-kicker scroll-reveal"
+        style={{ '--stagger-idx': 0 } as React.CSSProperties}
+      >
+        00. INTERACTIVE AGENT SANDBOX LAB
+      </div>
+      <div
+        className="lab-header scroll-reveal"
+        style={{ '--stagger-idx': 1 } as React.CSSProperties}
+      >
         <div>
           <h2>
             Watch the Agent Type.<br />
@@ -33,11 +41,17 @@ export const InteractiveConsequenceLab: React.FC = () => {
         </div>
 
         <div className="lab-legend-strip">
-          <div className="legend-item">
+          <div
+            className="legend-item scroll-reveal"
+            style={{ '--stagger-idx': 2 } as React.CSSProperties}
+          >
             <span className="legend-indicator unshielded"></span>
             <span>Direct Send = Unchecked Side Effects</span>
           </div>
-          <div className="legend-item">
+          <div
+            className="legend-item scroll-reveal"
+            style={{ '--stagger-idx': 3 } as React.CSSProperties}
+          >
             <span className="legend-indicator shielded"></span>
             <span>Cognition Gate = Memory Sandbox Quarantine</span>
           </div>

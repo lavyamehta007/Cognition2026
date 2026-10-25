@@ -30,7 +30,6 @@ export const App: React.FC = () => {
       '.consequence-lab > .section-kicker',
       '.consequence-lab .lab-header',
       '.composer-scenarios',
-      '.scenario-chips-row .scenario-chip',
       '.mail-client-window',
       '.ledger-section-header',
       '.spec-ledger .spec-row',
@@ -71,20 +70,38 @@ export const App: React.FC = () => {
           const target = entry.target as HTMLElement;
           if (entry.isIntersecting) {
             target.classList.add('is-visible');
+            target.setAttribute('data-revealed', 'true');
+            observer.unobserve(target);
           }
         });
       },
       {
         root: null,
-        rootMargin: '0px 0px -8% 0px',
-        threshold: 0.1,
+        rootMargin: '0px 0px -4% 0px',
+        threshold: 0.05,
       }
     );
 
-    elements.forEach((el) => observer.observe(el));
+    const observeAllRevealNodes = () => {
+      const revealNodes = document.querySelectorAll<HTMLElement>('.scroll-reveal');
+      revealNodes.forEach((node) => {
+        if (node.classList.contains('is-visible') || node.getAttribute('data-revealed') === 'true') {
+          return;
+        }
+        observer.observe(node);
+      });
+    };
+
+    observeAllRevealNodes();
+
+    const mutationObserver = new MutationObserver(() => {
+      observeAllRevealNodes();
+    });
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       window.removeEventListener('scroll', updateScrollProgress);
+      mutationObserver.disconnect();
       observer.disconnect();
     };
   }, []);

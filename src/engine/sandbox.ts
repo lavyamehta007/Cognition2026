@@ -40,39 +40,130 @@ export class GroundedSandbox {
     this.companyDomain = companyDomain;
   }
 
+  private findVerbatimMatch(text: string, patterns: string[]): string | null {
+    const lower = text.toLowerCase();
+    for (const pattern of patterns) {
+      const idx = lower.indexOf(pattern.toLowerCase());
+      if (idx !== -1) {
+        return text.slice(idx, idx + pattern.length);
+      }
+    }
+    return null;
+  }
+
   simulate(draft: EmailDraft, originalIntent: string): ConsequenceReport {
     // Layer 1: Deterministic Heuristic Checks
     const externalRecipients = draft.recipients.filter(
-      (r) => !r.endsWith(`@${this.companyDomain}`)
+      (r) => !r.toLowerCase().endsWith(`@${this.companyDomain}`)
     );
     const violations: string[] = [];
-    const lowerBody = draft.body.toLowerCase();
+    const combinedSource = `${draft.subject} ${draft.body}`;
+    const lowerBody = combinedSource.toLowerCase();
 
-    const sensitiveKeywords = [
-      'confidential',
-      'api_key',
-      'api key',
-      'api keys',
-      'password',
-      'salary',
-      'ssn',
-      'secret',
+    const credentialPatterns = [
+      'send your personal api keys',
+      'submit their api keys',
+      'aws secret key',
+      'secret key',
       'private key',
+      'api keys',
+      'api key',
+      'api_key',
+      'passwords immediately',
+      'root password',
+      'passwords',
+      'password',
+      'access token',
+      'bearer token',
+      'ssh key',
+      'credentials',
+      'seed phrase',
     ];
 
-    if (externalRecipients.length > 0 && sensitiveKeywords.some((kw) => lowerBody.includes(kw))) {
+    const dlpPatterns = [
+      'social security',
+      'ssn',
+      'credit card',
+      'salary spreadsheet',
+      'salaries',
+      'salary',
+      'payroll',
+      'wire transfer',
+      'bank account',
+      'confidential',
+      'proprietary',
+      'customer pii',
+      'nda',
+    ];
+
+    const panicPatterns = [
+      'laid off without severance',
+      'getting laid off',
+      'laid off',
+      'layoffs',
+      'layoff',
+      'without severance',
+      'severance',
+      'everyone is fired',
+      'fired',
+      'terminated',
+      'bankrupt',
+      'insolvent',
+      'lawsuit',
+    ];
+
+    const blastPatterns = [
+      'production database tables were dropped',
+      'database tables were dropped',
+      'dropped database',
+      'drop table',
+      'production is broken',
+      'deleted production',
+      'ransomware',
+      'data breach',
+      'security breach',
+      'servers are down',
+      'compromised',
+      'hacked',
+      'outage',
+      'broken',
+    ];
+
+    const matchedCred = this.findVerbatimMatch(combinedSource, credentialPatterns);
+    const matchedDlp = this.findVerbatimMatch(combinedSource, dlpPatterns);
+    const matchedPanic = this.findVerbatimMatch(combinedSource, panicPatterns);
+    const matchedBlast = this.findVerbatimMatch(combinedSource, blastPatterns);
+
+    if (externalRecipients.length > 0 && (matchedCred || matchedDlp)) {
       violations.push(
-        `External recipient policy leak: detected sensitive data targeted outside ${this.companyDomain}.`
+        `External recipient policy leak: detected sensitive data targeted outside ${this.companyDomain} (${externalRecipients.join(', ')}).`
       );
     }
 
     const isMassEmail = draft.recipients.some(
-      (r) => r.startsWith('all@') || r.startsWith('all-company@') || r.startsWith('developer-team@')
+      (r) =>
+        r.startsWith('all@') ||
+        r.startsWith('all-company@') ||
+        r.startsWith('developer-team@') ||
+        r.startsWith('engineering@') ||
+        r.startsWith('company@')
     );
-    const panicKeywords = ['urgent', 'fired', 'laid off', 'terminated', 'severance', 'outage', 'broken'];
-    if (isMassEmail && panicKeywords.some((term) => lowerBody.includes(term))) {
+
+    if (isMassEmail && (matchedPanic || matchedBlast || lowerBody.includes('urgent'))) {
       violations.push(
-        'Mass distribution blast hazard: high-anxiety or panic keywords sent to whole-team list.'
+        'Mass distribution blast hazard: high-anxiety or destructive operational claims sent to group distribution list.'
+      );
+    }
+
+    if (matchedCred) {
+      violations.push(
+        `Credential exfiltration hazard: unencrypted secret or authentication token ("${matchedCred.toLowerCase()}") detected in outbound payload.`
+      );
+    }
+
+    if (matchedDlp) {
+      violations.push(
+        `DLP governance violation: restricted financial, PII, or confidential material ("${matchedDlp.toLowerCase()}") flagged in message buffer.`
       );
     }
 
@@ -84,80 +175,95 @@ export class GroundedSandbox {
     const predictedConsequences: string[] = [];
     const candidateQuotes: Array<{ claim: string; text: string }> = [];
 
-    // Analyze draft characteristics
-    const hasLayoffs = lowerBody.includes('laid off') || lowerBody.includes('severance');
-    const requestsApiKeys = lowerBody.includes('api key') || lowerBody.includes('api_key');
-    const isOutageOrBreak = lowerBody.includes('production is broken') || (isMassEmail && lowerBody.includes('broken'));
-
-    if (hasLayoffs || requestsApiKeys || violations.length > 0) {
+    if (matchedPanic || matchedCred || matchedDlp || matchedBlast || violations.length > 0) {
       riskLevel = 'CRITICAL';
       riskScore = 0.95;
-      blastRadius = 'HIGH (company-wide / security credentials / legal)';
+      blastRadius = 'HIGH (company-wide / security credentials / compliance)';
       recommendedAction = 'BLOCK';
 
-      if (hasLayoffs) {
+      if (matchedPanic) {
         predictedConsequences.push(
-          'Catastrophic organizational morale impact: unverified mass layoff announcement.'
+          'Catastrophic organizational morale impact: unverified termination or panic-inducing announcement.'
         );
         candidateQuotes.push({
-          claim: 'RULE_PANIC_01: Unverified company termination notice',
-          text: lowerBody.includes('laid off without severance')
-            ? 'laid off without severance'
-            : 'laid off',
+          claim: 'RULE_PANIC_01: Unverified company termination / panic notice',
+          text: matchedPanic,
         });
       }
-      if (requestsApiKeys) {
+      if (matchedCred) {
         predictedConsequences.push(
-          'Severe security credential breach: demanding unencrypted API key submissions via email.'
+          'Severe security credential breach: transmitting or harvesting unencrypted secrets/keys via email.'
         );
         candidateQuotes.push({
-          claim: 'RULE_EXFIL_04: Credential harvesting risk via email',
-          text: lowerBody.includes('send your personal api keys')
-            ? 'send your personal api keys'
-            : 'api keys',
+          claim: 'RULE_EXFIL_04: Credential harvesting / secret exposure risk',
+          text: matchedCred,
         });
       }
-      if (isOutageOrBreak) {
+      if (matchedDlp) {
         predictedConsequences.push(
-          'Uncontrolled panic and internal workflow disruption.'
+          'Regulatory & DLP compliance breach: unauthorized disclosure of confidential, financial, or PII records.'
         );
         candidateQuotes.push({
-          claim: 'RULE_BLAST_02: High-anxiety mass broadcast claim',
-          text: 'production is broken',
+          claim: 'RULE_DLP_03: Restricted PII / confidential data leak',
+          text: matchedDlp,
+        });
+      }
+      if (matchedBlast) {
+        predictedConsequences.push(
+          'Uncontrolled operational panic and unverified infrastructure incident escalation.'
+        );
+        candidateQuotes.push({
+          claim: 'RULE_BLAST_02: High-anxiety destructive infrastructure claim',
+          text: matchedBlast,
         });
       }
     } else if (externalRecipients.length > 0) {
-      const mentionsLatencyOrStaging = lowerBody.includes('staging database') || lowerBody.includes('latency') || lowerBody.includes('database');
-      
-      if (mentionsLatencyOrStaging) {
+      const externalRiskPatterns = [
+        'staging database',
+        'latency',
+        'database',
+        'delay',
+        'incident',
+        'bug',
+        'vulnerability',
+        'sla',
+        'contract',
+        'pricing',
+      ];
+      const matchedExtRisk = this.findVerbatimMatch(combinedSource, externalRiskPatterns);
+
+      if (matchedExtRisk) {
         riskLevel = 'MEDIUM';
         riskScore = 0.55;
-        blastRadius = 'MEDIUM (external enterprise partner / client-facing)';
+        blastRadius = `MEDIUM (external domain: ${externalRecipients.join(', ')})`;
         recommendedAction = 'REVISE'; // triggers human review gate
         predictedConsequences.push(
-          'Client contractual communication: external partner notified of internal infrastructure anomalies.'
+          'Client contractual communication: external recipient notified of internal operational or infrastructure details.'
         );
         predictedConsequences.push(
-          'Potential SLA scrutiny or escalation from partner lead.'
+          'Potential SLA scrutiny or escalation from external stakeholder.'
         );
         candidateQuotes.push({
-          claim: 'Disclosing infrastructure latency to client partner',
-          text: 'staging database',
+          claim: 'RULE_EXT_05: Disclosing internal telemetry to external domain',
+          text: matchedExtRisk,
         });
-        candidateQuotes.push({
-          claim: 'Latency anomaly notification',
-          text: 'latency',
-        });
+        if (lowerBody.includes('latency') && matchedExtRisk.toLowerCase() !== 'latency') {
+          candidateQuotes.push({
+            claim: 'Latency anomaly notification',
+            text: 'latency',
+          });
+        }
       } else {
-        riskLevel = 'LOW';
-        riskScore = 0.25;
-        blastRadius = 'LOW (external routine communication)';
+        riskLevel = 'MEDIUM';
+        riskScore = 0.48;
+        blastRadius = `MEDIUM (external recipient: ${externalRecipients.join(', ')})`;
+        recommendedAction = 'REVISE';
         predictedConsequences.push(
-          'Standard external outreach; minimal downstream friction.'
+          `Outbound communication crosses organizational boundary (${externalRecipients.join(', ')}); requires operator sign-off.`
         );
         candidateQuotes.push({
-          claim: 'Routine external dialogue',
-          text: draft.subject.toLowerCase(),
+          claim: 'RULE_EXT_05: External domain transmission',
+          text: draft.subject.slice(0, 32).trim() || draft.body.slice(0, 32).trim(),
         });
       }
     } else {
@@ -167,26 +273,35 @@ export class GroundedSandbox {
       blastRadius = 'LOW (internal team notification)';
       recommendedAction = 'PROCEED';
 
-      if (lowerBody.includes('operational incident') || lowerBody.includes('service degradation')) {
+      if (lowerBody.includes('operational incident') || lowerBody.includes('service degradation') || lowerBody.includes('compliance review')) {
         predictedConsequences.push(
-          'Authorized engineering status review; credentials safely routed via internal incident portal.'
+          'Authorized engineering status review; sensitive telemetry safely routed via internal incident portal.'
         );
-        candidateQuotes.push({
-          claim: 'Internal service incident review notice',
-          text: 'operational incident',
-        });
-        candidateQuotes.push({
-          claim: 'Directing logging via secure internal portal',
-          text: 'incident portal',
-        });
+        if (lowerBody.includes('operational incident')) {
+          candidateQuotes.push({
+            claim: 'Internal service incident review notice',
+            text: 'operational incident',
+          });
+        }
+        if (lowerBody.includes('incident portal')) {
+          candidateQuotes.push({
+            claim: 'Directing logging via secure internal portal',
+            text: 'incident portal',
+          });
+        }
       } else {
         predictedConsequences.push(
-          'Routine internal calendar coordination; no external exposure or compliance impact.'
+          'Routine internal coordination; no external exposure, credential leakage, or compliance impact.'
         );
-        candidateQuotes.push({
-          claim: 'Internal calendar sync inquiry',
-          text: 'sync',
-        });
+        const routineMatch =
+          this.findVerbatimMatch(combinedSource, ['sync', 'meeting', 'review', 'update', 'schedule']) ||
+          draft.subject.split(' ').slice(0, 2).join(' ');
+        if (routineMatch) {
+          candidateQuotes.push({
+            claim: 'Verified safe internal coordination token',
+            text: routineMatch,
+          });
+        }
       }
     }
 
@@ -197,7 +312,7 @@ export class GroundedSandbox {
 
     for (const item of candidateQuotes) {
       const q = item.text.trim().toLowerCase();
-      if (q.length > 3 && fullText.includes(q)) {
+      if (q.length >= 3 && fullText.includes(q)) {
         groundedEvidence.push({
           claim: item.claim,
           quoted_text: q,
@@ -217,7 +332,7 @@ export class GroundedSandbox {
 
     // Merge deterministic vetoes
     if (violations.length > 0) {
-      riskScore = Math.max(riskScore, 0.90);
+      riskScore = Math.max(riskScore, 0.92);
       riskLevel = 'CRITICAL';
       recommendedAction = 'BLOCK';
       for (const v of violations) {
@@ -242,3 +357,4 @@ export class GroundedSandbox {
     };
   }
 }
+

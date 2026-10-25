@@ -5,16 +5,30 @@ export const ArchitecturePanel: React.FC = () => {
 
   return (
     <section className="explore-section" id="explore">
-      <div className="section-kicker">03. SYSTEM DEPLOYMENT &amp; VERIFICATION</div>
-      <h2>
+      <div
+        className="section-kicker scroll-reveal"
+        style={{ '--stagger-idx': 0 } as React.CSSProperties}
+      >
+        03. SYSTEM DEPLOYMENT &amp; VERIFICATION
+      </div>
+      <h2
+        className="scroll-reveal"
+        style={{ '--stagger-idx': 1 } as React.CSSProperties}
+      >
         Make every action<br />
         <span>earn the green light.</span>
       </h2>
-      <p>
+      <p
+        className="scroll-reveal"
+        style={{ '--stagger-idx': 2 } as React.CSSProperties}
+      >
         Inspect the deterministic two-phase commit topology, run the benchmark suite above, and verify how consequence-aware gates prevent destructive autonomous execution.
       </p>
 
-      <div className="explore-actions">
+      <div
+        className="explore-actions scroll-reveal"
+        style={{ '--stagger-idx': 3 } as React.CSSProperties}
+      >
         <button
           type="button"
           className="button button-primary"
@@ -36,20 +50,33 @@ export const ArchitecturePanel: React.FC = () => {
       </div>
 
       {isOpen && (
-        <div className="architecture-panel" id="architecture-panel">
-          <div>
+        <div
+          className="architecture-panel scroll-reveal is-visible"
+          id="architecture-panel"
+          style={{ '--stagger-idx': 0 } as React.CSSProperties}
+        >
+          <div
+            className="scroll-reveal is-visible"
+            style={{ '--stagger-idx': 0 } as React.CSSProperties}
+          >
             <span className="panel-step">[01]</span>
             <b>PROPOSE_BUFFER</b>
             <small>Draft serialized — side-effect drivers locked</small>
           </div>
           <span className="panel-connector">→</span>
-          <div>
+          <div
+            className="scroll-reveal is-visible"
+            style={{ '--stagger-idx': 1 } as React.CSSProperties}
+          >
             <span className="panel-step">[02]</span>
             <b>AIRGAP_SANDBOX</b>
             <small>Heuristics, blast radius, verbatim quote check</small>
           </div>
           <span className="panel-connector">→</span>
-          <div>
+          <div
+            className="scroll-reveal is-visible"
+            style={{ '--stagger-idx': 2 } as React.CSSProperties}
+          >
             <span className="panel-step">[03]</span>
             <b>COMMIT_GATE</b>
             <small>AUTO (&lt;0.40) | HITL (0.40–0.70) | VETO (&gt;0.70)</small>

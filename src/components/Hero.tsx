@@ -73,22 +73,34 @@ export const Hero: React.FC = () => {
       <div className="hero-split">
         {/* Left Column: Copy & Primary Controls */}
         <div className="hero-copy">
-          <div className="eyebrow">
+          <div
+            className="eyebrow scroll-reveal"
+            style={{ '--stagger-idx': 0 } as React.CSSProperties}
+          >
             <span className="eyebrow-tag">PRE-EXECUTION SAFETY LAYER</span>
             <span className="eyebrow-sep">·</span>
             <span>TWO-PHASE COMMIT ARCHITECTURE</span>
           </div>
 
-          <h1>
+          <h1
+            className="scroll-reveal"
+            style={{ '--stagger-idx': 1 } as React.CSSProperties}
+          >
             Before AI acts,<br />
             <span>think it through.</span>
           </h1>
 
-          <p className="hero-description">
+          <p
+            className="hero-description scroll-reveal"
+            style={{ '--stagger-idx': 2 } as React.CSSProperties}
+          >
             Cognition intercepts autonomous agent proposals in an air-gapped consequence sandbox—auditing blast radius, policy leaks, and verbatim evidence before any side effect reaches production.
           </p>
 
-          <div className="hero-actions">
+          <div
+            className="hero-actions scroll-reveal"
+            style={{ '--stagger-idx': 3 } as React.CSSProperties}
+          >
             <a className="button button-primary" href="#lab">
               <span>Inspect Live Sandbox</span>
               <kbd className="kbd-badge kbd-dark">[ENTER]</kbd>
@@ -99,18 +111,30 @@ export const Hero: React.FC = () => {
             </a>
           </div>
 
-          <div className="hero-proof">
-            <div className="proof-step">
+          <div
+            className="hero-proof scroll-reveal"
+            style={{ '--stagger-idx': 4 } as React.CSSProperties}
+          >
+            <div
+              className="proof-step scroll-reveal"
+              style={{ '--stagger-idx': 0 } as React.CSSProperties}
+            >
               <span className="proof-idx">01</span>
               <span>PROPOSE_BUFFER</span>
             </div>
             <span className="proof-arrow">→</span>
-            <div className="proof-step">
+            <div
+              className="proof-step scroll-reveal"
+              style={{ '--stagger-idx': 1 } as React.CSSProperties}
+            >
               <span className="proof-idx">02</span>
               <span>AIRGAP_SANDBOX</span>
             </div>
             <span className="proof-arrow">→</span>
-            <div className="proof-step">
+            <div
+              className="proof-step scroll-reveal"
+              style={{ '--stagger-idx': 2 } as React.CSSProperties}
+            >
               <span className="proof-idx">03</span>
               <span>COMMIT_GATE</span>
             </div>
@@ -118,7 +142,11 @@ export const Hero: React.FC = () => {
         </div>
 
         {/* Right Column: Interactive Isometric Wireframe / Live State Machine Diagram */}
-        <div className="telemetry-schematic-panel" aria-label="Interactive State Machine Telemetry Diagram">
+        <div
+          className="telemetry-schematic-panel scroll-reveal"
+          style={{ '--stagger-idx': 1 } as React.CSSProperties}
+          aria-label="Interactive State Machine Telemetry Diagram"
+        >
           <div className="schematic-topbar">
             <div className="schematic-title">
               <span className="schematic-id">SYS_SCHEMATIC_01</span>
